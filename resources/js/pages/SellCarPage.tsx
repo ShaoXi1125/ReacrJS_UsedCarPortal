@@ -1,12 +1,14 @@
 import { useState } from "react";
-import CarSelector from "../components/CarSelector";
+
+import CarSelector from "@/components/CarSelector";
 import Footer from "@/components/Footer";
-import Header from "@/components/Header";
+import Header from "@/componen ts/Header";
 import { PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { createCar } from "@/services/CarService";
+
 
 export default function SellCarPage() {
   const [color, setColor] = useState("");
-  const [year, setYear] = useState("");
   const [mileage, setMileage] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
@@ -31,35 +33,15 @@ export default function SellCarPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     if (!selectedMake || !selectedModel || !selectedVariant || !selectedYear) {
       setMessage("Please select Make, Model, Year, and Variant.");
       return;
     }
-
-    const token = localStorage.getItem("token");
-    if (!token || token === "null") {
-      setMessage("You must be logged in to submit the form.");
-      return;
-    }
-
-    console.log("Selected values:", {
-      make_id: selectedMake.value,
-      make_title: selectedMake.title,
-      model_id: selectedModel.value,
-      model_title: selectedModel.title,
-      variant_id: selectedVariant.value,
-      variant_title: selectedVariant.title,
-      year: selectedYear,
-      color,
-      mileage,
-      price,
-      description,
-    });
-
+  
     const formData = new FormData();
     formData.append("make_id", selectedMake.value);
-    formData.append("make_title", selectedMake.title || ""); // Ensure title is sent
+    formData.append("make_title", selectedMake.title || "");
     formData.append("model_id", selectedModel.value);
     formData.append("model_title", selectedModel.title || "");
     formData.append("variant_id", selectedVariant.value);
@@ -69,46 +51,29 @@ export default function SellCarPage() {
     formData.append("mileage", mileage);
     formData.append("price", price);
     formData.append("description", description);
-    images.forEach((img) => {
-      formData.append("images[]", img);
-    });
-
-    setLoading(true);
-    setMessage("");
-
+    images.forEach((img) => formData.append("images[]", img));
+  
     try {
-      // Fetch CSRF cookie
-      const csrfResponse = await fetch("http://127.0.0.1:8000/sanctum/csrf-cookie", {
-        method: "GET",
-        credentials: "include",
-      });
-      console.log("CSRF cookie response:", csrfResponse.status);
-
-      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-      console.log("CSRF token:", csrfToken);
-
-      const res = await fetch("http://127.0.0.1:8000/api/cars", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "X-CSRF-TOKEN": csrfToken || "",
-          "Accept": "application/json",
-        },
-        body: formData,
-        credentials: "include",
-      });
-
-      const data = await res.json();
-      console.log("Response data:", data);
-      if (res.ok) {
-        setMessage("Car listed successfully!");
-        setImages([]);
-      } else {
-        setMessage(data.message || `Error: ${res.status} ${res.statusText}`);
-      }
-    } catch (err) {
-      console.error("Network error details:", err);
-      setMessage("Network error: " + (err instanceof Error ? err.message : "An unknown error occurred"));
+      setLoading(true);
+      setMessage("");
+  
+  
+      // ✅ 提交表单
+      await createCar(formData);
+  
+      setMessage("Car listed successfully!");
+      setImages([]);
+      setColor("");
+      setMileage("");
+      setPrice("");
+      setDescription("");
+      setSelectedMake(null);
+      setSelectedModel(null);
+      setSelectedVariant(null);
+      setSelectedYear("");
+    } catch (error: any) {
+      console.error(error.response?.data || error.message);
+      setMessage("Error while submitting.");
     } finally {
       setLoading(false);
     }
@@ -154,7 +119,9 @@ export default function SellCarPage() {
             className="w-full p-3 border border-gray-300 rounded-lg"
           />
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Upload Images</label>
+            <label className="block text-gray-700 font-medium mb-2">
+              Upload Images
+            </label>
             <div className="flex flex-wrap gap-4">
               {images.map((file, index) => (
                 <div key={index} className="relative w-24 h-24">

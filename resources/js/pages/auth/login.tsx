@@ -30,12 +30,6 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                  className="flex flex-col gap-6"
                  onSuccess={(page) => {
                     console.log("Login response:", page.props); // Debug
-                    if (page.props.token) {
-                        console.log("Token received:", page.props.token); // Debug
-                        localStorage.setItem('token', String(page.props.token));
-                    } else {
-                        console.error("No token received from login response");
-                    }
                 }}
                 
             >
